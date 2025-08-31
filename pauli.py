@@ -30,6 +30,25 @@ def low_weight_pauli(spo: SparsePauliOp, max_weight: int) -> SparsePauliOp:
     mask = [sum(1 for c in str(p) if c != 'I') <= max_weight for p in spo.paulis]
     return SparsePauliOp(spo.paulis[mask], coeffs=spo.coeffs[mask])
 
+def pauli_weight(pauli):
+    """
+    Calculate the weight of a Pauli operator.
+    """
+    return sum(1 for c in str(pauli) if c != 'I')
+
+def truncate_high_weight_pauli(ob, w: int):
+    """
+    Truncate the observable by removing high-weight (>w) Pauli terms.
+    Input: observable (SparsePauliOp), weight threshold (int)
+    Output: truncated observable (SparsePauliOp)
+    """
+    temp = []
+    for item in list(ob):
+        # print(item, item.paulis)
+        if pauli_weight(item.paulis[0]) <= w:
+            temp.append(item)
+    return sum(temp)
+    # return sum(temp).simplify()
 
 def w_weight_pauli(spo: SparsePauliOp, max_weight: int) -> SparsePauliOp:
     """Return a SparsePauliOp with only low-weight Pauli operators."""
