@@ -1,19 +1,20 @@
 import numpy as np
+from math import log
 from tqdm import tqdm
 from .utils import *
 from .PauliRepresentation import *
 from qiskit.quantum_info import SparsePauliOp
 
-class Simulation:
+class LowWeightPauliPropagation:
     """
-    Implements sparse Pauli dynamics .
+    Implements Light Pauli dynamics with weight-based truncation.
 
     Attributes:
     -----------
     nq : number of qubits
     observable : Heisenberg-evolved observable represented as a sum of Paulis (PauliRepresentation class)
     operator_sequence : Sequence of Pauli rotation gates (OperatorSequence class)
-    threshold : parameter for truncating the representation of the observable
+    threshold : positive integer for maximum Pauli weight to keep (Paulis with weight > threshold are removed)
     sin_coeffs, cos_coeffs : stores precomputed sine and cosine of rotation angles, which are used repeatedly
     eval_exp_val : A general function for evaluating the expectation value of a Pauli
     nprocs : number of processes for parallel runs (default value: 1)
@@ -28,7 +29,7 @@ class Simulation:
             self.observable.coeffs = np.array(kwargs.get('observable_coeffs', [1.0]), dtype=np.complex128)
         self.observable.coeffs = self.observable.coeffs[self.observable.order_pauli()]
         self.operator_sequence = operator_sequence
-        self.threshold = kwargs.get('threshold', 0.01)
+        self.threshold = kwargs.get('threshold', 3)
         self.sin_coeffs = np.sin(2*operator_sequence.coeffs)
         self.cos_coeffs = np.cos(2*operator_sequence.coeffs)
         self.eval_exp_val = kwargs.get('exp_val_fun', None)
@@ -70,14 +71,36 @@ class Simulation:
         if process is not None:
             r.append(process(self.observable))
         for step in tqdm(range(nsteps)):
-            # print('#Paulis in ob: ', self.observable.size(), len(self.observable.coeffs))
             # print(self.nq, self.observable.weights) # , self.observable.to_sparse_pauli_op(self.observable.nq)
             self.run()
+            ob_size = self.observable.size()
+            print('#Paulis in ob: ', ob_size, log(ob_size, 4))
+            
+            # Remove Paulis with weight > threshold
+            self.filter_by_weight()
+            
             if process is not None and ((step+1) % process_every == 0):
-                print(self.observable.size())
+                # print(self.observable.size())
                 r.append(process(self.observable))
         if process is not None:
             return r
+    
+    def filter_by_weight(self, verbose=False):
+        """
+        Remove Paulis from the observable that have weight > threshold.
+        """
+        if hasattr(self.observable, 'weights'):
+            weights = self.observable.weights
+        else:
+            weights = self.observable.weight()
+        
+        # Find indices of Paulis with weight > threshold
+        to_remove = np.where(weights > self.threshold)[0]
+        
+        if len(to_remove) > 0:
+            if verbose:
+                print(f"Removing {len(to_remove)} Paulis with weight > {self.threshold}")
+            self.observable.delete_pauli(to_remove, self.nprocs==1)
 
     def apply_gate(self, j, op, verbose=False):
         """
@@ -85,8 +108,7 @@ class Simulation:
         The steps are:
         1. Identify set of Paulis in self.observable that anticommute with op.
         2. Compute new Paulis and update coefficients of existing Paulis.
-        3. Discard existing Paulis from self.observable whose coefficients are below the threshold.
-        4. Insert new Paulis from new_paulis into self.observable where coefficients of new Paulis are above the threshold. 
+        3. Add ALL new Paulis that don't already exist (no coefficient filtering).
         """
         anticommuting = np.where(self.observable.anticommutes(op))[0]
         if verbose: print(anticommuting)
@@ -101,16 +123,10 @@ class Simulation:
             pmult(coeffs_sin, (1j) * self.sin_coeffs[j])
             update_coeffs(self.observable.coeffs, self.observable.coeffs[new_pauli_indices%self.observable.size()], self.cos_coeffs[j], (1j) * self.sin_coeffs[j], new_paulis.phase, self.observable.phase[new_pauli_indices%self.observable.size()], anticommuting, new_pauli_in_observable)
 
-            #Project out Paulis and their coefficients that are below threshold.
-            to_add_remove = np.empty(len(anticommuting), dtype=np.bool_)
-            a_lt_b(self.observable.coeffs[anticommuting], self.threshold, to_add_remove)
-            if np.any(to_add_remove):
-                self.observable.delete_pauli(anticommuting[to_add_remove], self.nprocs==1)
-
-            #Find which Paulis will be added to the observable.
-            a_gt_b_and_not_c(coeffs_sin, self.threshold, new_pauli_in_observable, to_add_remove)
-            if np.any(to_add_remove):
-                self.add_new_paulis(new_paulis, coeffs_sin, to_add_remove)
+            # Add ALL new Paulis that don't already exist in the observable (no coefficient threshold)
+            to_add = np.logical_not(new_pauli_in_observable)
+            if np.any(to_add):
+                self.add_new_paulis(new_paulis, coeffs_sin, to_add)
     
     def prepare_new_paulis(self, obs, anticommuting_ind, op):
         """
@@ -146,5 +162,5 @@ class Simulation:
         res = []
         for i, pauli in enumerate(pauli_list):
             c = np.array([1.0]) if coeffs is None else np.array(coeffs[i])
-            res.append(Simulation.from_pauli_list(pauli, operator_sequence=operator_sequence, observable_coeffs=c, **kwargs).run_circuit())
+            res.append(LowWeightPauliPropagation.from_pauli_list(pauli, operator_sequence=operator_sequence, observable_coeffs=c, **kwargs).run_circuit())
         return sum([r for r in res])

@@ -1,6 +1,10 @@
 import math
+import numpy as np
 from qiskit.quantum_info import SparsePauliOp, Operator, commutator
-
+from spd.OperatorSequence import *
+from spd.SparsePauliDynamics import *
+from spd.LightPauliDynamics import *
+from spd.utils import unpackbits
 def pauli_rotation_evo(G, theta, P, coeffs=None):
     if coeffs is None:
         result = math.cos(theta*2)*P + math.sin(theta*2)*1j*G@P
@@ -69,3 +73,100 @@ def expect_value(ob, state):
         raise ValueError('Expectation value is not real')
     return expval.real
     # return np.abs(state.conj().T @ ob @ state)
+
+
+
+def exp_val_0101_state_pauli_rep(observable, n_qubits=None, pattern=None):
+    """
+    Compute the expectation value of an observable (PauliRepresentation) with respect to an 0101 state.
+    Default pattern is |0101...01⟩ for even number of qubits.
+    
+    Args:
+        observable: PauliRepresentation object
+        n_qubits: Number of qubits (uses observable.nq if not specified)  
+        pattern: Optional custom pattern string (e.g., "0101" or "010101")
+    
+    Returns:
+        The expectation value Tr(ρ O)
+    """
+    
+    if n_qubits is None:
+        n_qubits = observable.nq
+    
+    # Determine the pattern
+    if pattern is None:
+        if n_qubits % 2 != 0:
+            raise ValueError("Default pattern requires even number of qubits")
+        # Create alternating pattern "0101...01"
+        pattern = '01' * (n_qubits // 2)
+    else:
+        if len(pattern) != n_qubits:
+            raise ValueError(f"Pattern length {len(pattern)} doesn't match number of qubits {n_qubits}")
+    
+    # Find Z-type terms (only I and Z operators)
+    z_mask = observable.ztype()
+    
+    # Initialize expectation value
+    expectation = 0.0
+    
+    # Iterate through Z-type terms only
+    z_indices = np.where(z_mask)[0]
+    
+    for idx in z_indices:
+        # Get the coefficient
+        coeff = observable.coeffs[idx]
+        
+        # Convert the bit representation to get Z positions
+        # For PauliRepresentation, we need to unpack the bits to see where Z operators are
+        z_bits = unpackbits(observable.bits[idx:idx+1, :observable.nq], n_qubits)[0]
+        
+        # Count Z operators at positions where pattern has '1'
+        sign_exponent = 0
+        for i, bit in enumerate(pattern):
+            if z_bits[i] and bit == '1':  # Z operator at position where pattern has '1'
+                sign_exponent += 1
+        
+        # This term contributes with appropriate sign
+        phase_factor = (-1j) ** observable.phase[idx]  # Apply the Pauli phase
+        contribution = coeff * phase_factor * ((-1) ** sign_exponent)
+        expectation += contribution
+    
+    return expectation
+
+
+def exp_val_all_zeros_pauli_rep(observable):
+    """
+    Compute the expectation value of an observable (PauliRepresentation) with respect to the all-zeros state |0^n⟩.
+    
+    The algorithm uses the fact that the Pauli decomposition of ρ_0 = |0^n⟩⟨0^n| 
+    contains only Pauli strings with I and Z operators, each with coefficient 1/2^n.
+    
+    Args:
+        observable: PauliRepresentation object
+    
+    Returns:
+        The expectation value Tr(ρ_0 O)
+    """
+    
+    # Find Z-type terms (only I and Z operators)
+    z_mask = observable.ztype()
+    
+    # Initialize expectation value
+    expectation = 0.0
+    
+    # Iterate through Z-type terms only
+    z_indices = np.where(z_mask)[0]
+    
+    for idx in z_indices:
+        # Get the coefficient
+        coeff = observable.coeffs[idx]
+        
+        # Apply the Pauli phase
+        phase_factor = (-1j) ** observable.phase[idx]
+        
+        # For all-zeros state, all Z-type terms contribute with their full coefficient
+        # (no sign changes based on Z positions since |0⟩ is eigenstate of Z with eigenvalue +1)
+        contribution = coeff * phase_factor
+        expectation += contribution
+    
+    return expectation

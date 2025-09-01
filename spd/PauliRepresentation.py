@@ -16,10 +16,7 @@ class PauliRepresentation:
         self.nq = nq
         self.coeffs = coeffs
         self.n_pauli = self.size()  
-        if self.n_pauli == 1:
-            self.weights = self.weight()[0]
-        else:
-            self.weights = self.weight()
+        self.weights = self.weight()
 
     @staticmethod
     def from_pauli_list(plist, coeffs=np.array([1.0], dtype=np.complex128)):
@@ -32,6 +29,8 @@ class PauliRepresentation:
         nq = plist.num_qubits
         bits = np.hstack((packbits(np.array(z)), packbits(np.array(x))))
         return PauliRepresentation(bits, phase, int(np.ceil(nq/64)), coeffs=coeffs)
+        # The third argument to PauliRepresentation is int(np.ceil(nq/64)), which is intended to be the number of qubits, but this actually computes the number of 64-bit words needed to store the bits, not the number of qubits. This will cause downstream errors in bit unpacking and indexing. Pass nq directly instead.
+        # return PauliRepresentation(bits, phase, nq, coeffs=coeffs)
     @staticmethod
     def from_sparse_pauli_op(op):
         """
@@ -78,6 +77,9 @@ class PauliRepresentation:
             self.bits, self.phase, self.coeffs = insert_index_serial(self.bits, other.bits, self.phase, other.phase, self.coeffs, coeffs, index, self.nq)
         else:
             self.bits, self.phase, self.coeffs = insert_index(self.bits, other.bits, self.phase, other.phase, self.coeffs, coeffs, index, self.nq)
+        # Update weights after insertion
+        self.weights = self.weight()
+
     def delete_pauli(self, index, serial):
         """
         Delete Paulis at indices in array 'index'.
@@ -86,6 +88,9 @@ class PauliRepresentation:
             self.bits, self.phase, self.coeffs = delete_index_serial(self.bits, self.phase, self.coeffs, index)
         else:
             self.bits, self.phase, self.coeffs = delete_index(self.bits, self.phase, self.coeffs, index, self.nq)
+        # Update weights after deletion
+        self.weights = self.weight()
+
     def anticommutes(self, other):
         """
         Takes as input PauliRepresentation 'self' (a list of Paulis) and PauliRepresentation 'other' of a single Pauli (!)
@@ -101,6 +106,9 @@ class PauliRepresentation:
         """
         update_phase(self.phase[:], other.phase[0], self.bits[:, :self.nq], other.bits[0, self.nq:])
         inplace_xor(self.bits, other.bits[0, :])
+        # Update weights after composition as the Pauli operators may have changed
+        self.weights = self.weight()
+
     def order_pauli(self):
         """
         Orders Paulis in PauliRepresentation by first ordering bits at qubit 1, then bits at qubit 2, and so on.
@@ -114,6 +122,7 @@ class PauliRepresentation:
             self.coeffs = self.coeffs[self.order_pauli()]
         remove_duplicates(self.bits, self.phase, self.coeffs)
         self.delete_pauli(np.flatnonzero(abs(self.coeffs)<=threshold), serial=serial)
+        # Note: weights are updated automatically in delete_pauli
     def overlap(self, other):
         """
         Computes overlap of two Pauli sums as Tr[B^dag A] / N, where N is a normalization factor.
