@@ -15,6 +15,11 @@ class PauliRepresentation:
         self.phase = phase
         self.nq = nq
         self.coeffs = coeffs
+        self.n_pauli = self.size()  
+        if self.n_pauli == 1:
+            self.weights = self.weight()[0]
+        else:
+            self.weights = self.weight()
 
     @staticmethod
     def from_pauli_list(plist, coeffs=np.array([1.0], dtype=np.complex128)):
@@ -133,6 +138,13 @@ class PauliRepresentation:
         return count_and(self.bits[:, :self.nq], self.bits[:, self.nq:])
     def count_z(self):
         return count_and(self.bits[:, :self.nq], np.bitwise_not(self.bits[:, self.nq:]))
+
+    def weight(self):
+        """
+        Returns the weight (number of non-identity operators) for each Pauli.
+        """
+        return count_weight(self.bits, self.nq)
+
 
 def evaluate_expectation_value_zero_state(pauli, index):
     """

@@ -4,6 +4,32 @@ from numba import njit, prange, set_num_threads
 
 powers_of_two = 1 << np.arange(64, dtype=np.uint64)
 
+@njit(parallel=True)
+def count_weight(bits, nq):
+    """
+    Count the weight of Pauli operators.
+    Weight is the number of non-identity single-qubit operators.
+    
+    Parameters:
+    -----------
+    bits : 2D array where first nq columns are z-bits, next nq columns are x-bits
+    nq : number of packed 64-bit integers representing qubits
+    
+    Returns:
+    --------
+    Array of weights for each Pauli operator
+    """
+    ndim = len(bits)
+    weights = np.zeros(ndim, dtype=np.int32)
+    
+    for i in prange(ndim):
+        # For each Pauli, OR the z-bits with x-bits to find non-identity positions
+        for j in range(nq):
+            non_identity = bits[i, j] | bits[i, j + nq]
+            weights[i] += countSetBits(non_identity)
+    
+    return weights
+
 @njit
 def packbits(bool_array):
     ndim1, ndim2 = np.shape(bool_array)
