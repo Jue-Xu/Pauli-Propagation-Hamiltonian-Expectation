@@ -153,6 +153,32 @@ class PauliRepresentation:
         Returns the weight (number of non-identity operators) for each Pauli.
         """
         return count_weight(self.bits, self.nq)
+    
+    def p2norm(self, normalized=True):
+        """
+        Calculate the Frobenius norm of the observable.
+        
+        Args:
+            normalized: If True, returns the normalized Frobenius norm (divided by sqrt(2^n)).
+                       If False, returns the unnormalized Frobenius norm.
+        
+        Returns:
+            The (normalized) Frobenius norm of the observable.
+        """
+        # Convert coeffs to numpy array if it's a list
+        if isinstance(self.coeffs, list):
+            coeffs_array = np.array(self.coeffs, dtype=np.complex128)
+        else:
+            coeffs_array = self.coeffs
+        
+        # Calculate L2 norm of coefficients
+        norm = np.linalg.norm(coeffs_array, ord=2)
+        
+        if normalized:
+            # Normalize by sqrt(2^n) where n is the number of qubits
+            norm = norm / np.sqrt(2**self.nq)
+        
+        return norm
 
 
 def evaluate_expectation_value_zero_state(pauli, index):

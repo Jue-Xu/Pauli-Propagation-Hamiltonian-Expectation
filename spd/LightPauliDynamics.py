@@ -35,6 +35,9 @@ class LowWeightPauliPropagation:
         self.eval_exp_val = kwargs.get('exp_val_fun', None)
         self.nprocs = kwargs.get('nprocs', 1)
         set_num_threads(self.nprocs)
+        
+        # Initialize list to store observable evolution
+        self.evo_obs = [self.observable.copy()]
 
         if self.eval_exp_val is None:
             self.eval_exp_val = evaluate_expectation_value_zero_state
@@ -66,7 +69,7 @@ class LowWeightPauliPropagation:
         nonzero_pauli_indices = np.where(self.observable.ztype())[0]
         return np.sum(self.observable.coeffs[nonzero_pauli_indices] * self.eval_exp_val(self.observable, nonzero_pauli_indices))
 
-    def run_dynamics(self, nsteps, process = None, process_every = 1):
+    def run_dynamics(self, nsteps, process = None, process_every = 1, verbose=False):
         r = []
         if process is not None:
             r.append(process(self.observable))
@@ -74,10 +77,14 @@ class LowWeightPauliPropagation:
             # print(self.nq, self.observable.weights) # , self.observable.to_sparse_pauli_op(self.observable.nq)
             self.run()
             ob_size = self.observable.size()
-            print('#Paulis in ob: ', ob_size, log(ob_size, 4))
+            if verbose:
+                print('#Paulis in ob: ', ob_size, log(ob_size, 4))
             
             # Remove Paulis with weight > threshold
             self.filter_by_weight()
+            
+            # Store the observable after filtering
+            self.evo_obs.append(self.observable.copy())
             
             if process is not None and ((step+1) % process_every == 0):
                 # print(self.observable.size())

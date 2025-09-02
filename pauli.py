@@ -170,3 +170,52 @@ def exp_val_all_zeros_pauli_rep(observable):
         expectation += contribution
     
     return expectation
+
+
+def decompose_by_weight_pauli_rep(observable):
+    """
+    Decompose a PauliRepresentation observable into a dictionary organized by weight.
+    
+    Args:
+        observable: PauliRepresentation object
+    
+    Returns:
+        Dictionary where:
+        - key: integer weight (number of non-identity operators)
+        - value: PauliRepresentation containing only terms of that weight
+    """
+    
+    weight_dict = {}
+    
+    # Get weights for all Pauli terms
+    weights = observable.weights
+    
+    # Convert coeffs to numpy array if it's a list
+    if isinstance(observable.coeffs, list):
+        coeffs_array = np.array(observable.coeffs, dtype=np.complex128)
+    else:
+        coeffs_array = observable.coeffs
+    
+    # Group terms by weight
+    for weight in np.unique(weights):
+        # Find indices of terms with this weight
+        weight_mask = (weights == weight)
+        weight_indices = np.where(weight_mask)[0]
+        
+        if len(weight_indices) > 0:
+            # Extract bits, phase, and coefficients for this weight
+            weight_bits = observable.bits[weight_indices]
+            weight_phase = observable.phase[weight_indices]
+            weight_coeffs = coeffs_array[weight_indices]
+            
+            # Create PauliRepresentation for this weight
+            weight_pauli_rep = PauliRepresentation(
+                bits=weight_bits,
+                phase=weight_phase,
+                nq=observable.nq,
+                coeffs=weight_coeffs
+            )
+            
+            weight_dict[int(weight)] = weight_pauli_rep
+    
+    return weight_dict
