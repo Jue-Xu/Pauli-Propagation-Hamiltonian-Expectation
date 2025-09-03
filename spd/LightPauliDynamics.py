@@ -78,7 +78,7 @@ class LowWeightPauliPropagation:
             self.run()
             ob_size = self.observable.size()
             if verbose:
-                print('#Paulis in ob: ', ob_size, log(ob_size, 4))
+                print('#Paulis=', ob_size)
             
             # Remove Paulis with weight > threshold
             self.filter_by_weight()

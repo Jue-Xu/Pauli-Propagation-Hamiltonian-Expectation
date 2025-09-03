@@ -171,12 +171,14 @@ class PauliRepresentation:
         else:
             coeffs_array = self.coeffs
         
-        # Calculate L2 norm of coefficients
-        norm = np.linalg.norm(coeffs_array, ord=2)
         
         if normalized:
+            # Calculate L2 norm of coefficients
+            norm = np.linalg.norm(coeffs_array, ord=2)
+        else:
             # Normalize by sqrt(2^n) where n is the number of qubits
-            norm = norm / np.sqrt(2**self.nq)
+            norm = norm * 2**normalized
+            # norm = norm / np.sqrt(2**self.nq)
         
         return norm
 
