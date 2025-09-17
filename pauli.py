@@ -219,3 +219,16 @@ def decompose_by_weight_pauli_rep(observable):
             weight_dict[int(weight)] = weight_pauli_rep
     
     return weight_dict
+
+def weight_2norm_distr(ob, n):
+    dist = []
+    for w in range(1, n+1):
+        ob_w = decompose_by_weight_pauli_rep(ob)
+        # print(ob_w)
+        if w in ob_w:
+            dist.append(ob_w[w].p2norm()**2)
+        else:
+            # print(f'No weight {w} Paulis')
+            dist.append(0)
+
+    return dist
