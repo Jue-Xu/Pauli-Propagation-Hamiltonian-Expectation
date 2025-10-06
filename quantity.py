@@ -21,6 +21,7 @@ def operator_magic(op):
     magic = -sum([abs(c)**2 * math.log(abs(c)**2) for c in op.coeffs])
     return magic
 
+# def state_magic(state):
     
 def compute_entanglement_entropy(statevector, subsystem_qubits, n):
     """
