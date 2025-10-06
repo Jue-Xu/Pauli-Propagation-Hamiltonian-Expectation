@@ -7,6 +7,26 @@ from qiskit.circuit.library import PauliGate
 import matplotlib.pyplot as plt
 
 
+# Method 2: Using Clifford Circuits (Exact Unitary 3-Design)
+def generate_clifford_states(num_qubits, num_states):
+    """
+    Generate states using random Clifford circuits.
+    Clifford group forms a unitary 3-design (hence also a 2-design).
+    """
+    from qiskit.quantum_info import random_clifford
+    
+    states = []
+    for _ in range(num_states):
+        # Generate random Clifford operator
+        cliff = random_clifford(num_qubits)
+        
+        # Apply to |0⟩ state
+        zero_state = Statevector.from_label('0' * num_qubits)
+        state = zero_state.evolve(cliff)
+        states.append(state)
+    
+    return states
+
 def generate_clifford_2_design(n_qubits, n_states):
     """
     Generate a 2-design using random Clifford states.

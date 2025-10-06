@@ -31,7 +31,6 @@ class Local_Hamiltonian:
         self.ham_xyz = [item for item in self.ham_xyz if not np.all(abs(item.coeffs) == 0)]
 
 
-
 def build_qmfi_hamiltonian(n, J_x, h_x, h_y, periodic=True):
     """
     Build the QMFI Hamiltonian as a SparsePauliOp
