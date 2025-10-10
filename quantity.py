@@ -11,12 +11,7 @@ def operator_magic(op):
     """
     Compute the operator magic of a given operator.
     Operator magic is defined as:
-    M(O) = log2(||O||_F^2 / (1/2^n * ||O||_1^2))
-    where ||O||_F is the Frobenius norm and ||O||_1 is the 1-norm (sum of absolute values of coefficients in Pauli basis).
-    
-    Args:
-        op: A qiskit Operator or SparsePauliOp  object. 
-            If SparsePauliOp, it will be converted to Operator.
+
     """
     magic = -sum([abs(c)**2 * math.log(abs(c)**2) for c in op.coeffs])
     return magic
@@ -96,28 +91,3 @@ def compute_observables(state, n):
     observables['mag_z'] = mag_z / n
     
     return observables
-
-
-
-# def exact_evolution(n, J_x, h_x, h_y, time, periodic=True):
-#     """
-#     Compute exact time evolution using matrix exponentiation
-#     (for comparison with MPS approximation)
-#     """
-#     from scipy.linalg import expm
-    
-#     # Build Hamiltonian
-#     H = build_qmfi_hamiltonian(n, J_x, h_x, h_y, periodic)
-#     H_matrix = H.to_matrix()
-    
-#     # Time evolution operator
-#     U = expm(-1j * H_matrix * time)
-    
-#     # Initial state |00...00⟩
-#     initial_state = np.zeros(2**n, dtype=complex)
-#     initial_state[0] = 1.0
-    
-#     # Evolved state
-#     evolved_state = U @ initial_state
-    
-#     return Statevector(evolved_state)
