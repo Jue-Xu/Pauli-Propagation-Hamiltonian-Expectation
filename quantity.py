@@ -16,7 +16,38 @@ def operator_magic(op):
     magic = -sum([abs(c)**2 * math.log(abs(c)**2) for c in op.coeffs])
     return magic
 
-# def state_magic(state):
+from qiskit.quantum_info import Pauli
+from itertools import product
+    # def magic(state,pauligroup):#state:Statevector, pauligroup:string (from Pauli_group(n)) 输入Pauli减少运算次数
+def state_linear_magic(state):
+    d = len(state)
+    m = []
+    pauligroup = [''.join(ops) for ops in product(['I','X','Y','Z'], repeat=int(np.log2(d)))]
+    for j, paulistr in enumerate(pauligroup):
+        a = state.evolve(Pauli(paulistr))
+        m1 = state.inner(a)
+        m1 = np.sqrt(np.real(np.conj(m1)*m1))
+        m.append(m1)
+    magica = 1-d*np.average(np.power(m,4))
+    return magica     
+
+# #n-qubit Pauli group(return a string)
+# def Pauli_group(n):
+#     String = ['I','X','Y','Z']
+#     if n == 1:
+#         return String
+#     else:
+#         a = Pauli_group(n-1)
+#         j = 0
+#         b = []
+#         while j < 4:
+#             c = String[j]
+#             i = 0
+#             while i < np.power(4,n-1):
+#                 b.append(c+a[i])
+#                 i += 1
+#             j += 1
+#         return b
     
 def compute_entanglement_entropy(statevector, subsystem_qubits, n):
     """
