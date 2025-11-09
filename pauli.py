@@ -60,7 +60,7 @@ def w_weight_pauli(spo: SparsePauliOp, max_weight: int) -> SparsePauliOp:
     return SparsePauliOp(spo.paulis[mask], coeffs=spo.coeffs[mask])
 
 
-def expect_value(ob, state):
+def expect_value(ob, state, tol=1e-7):
     # if isinstance(state, Statevector):
     #     return np.abs(state.conj().T @ ob @ state)
     # elif isinstance(state, DensityMatrix):
@@ -68,7 +68,7 @@ def expect_value(ob, state):
     # else:
     #     raise ValueError('invalid state type')
     expval = state.conj().T @ ob @ state
-    if expval.imag > 1e-7:
+    if expval.imag > tol:
         print('imaginary part of expectation value is', expval.imag)
         raise ValueError('Expectation value is not real')
     return expval.real
