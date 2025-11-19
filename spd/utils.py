@@ -87,14 +87,14 @@ def not_equal(a,b):
 
 @njit(parallel=True)
 def bits_equal(a, b):
-    c = np.empty(len(b), dtype=np.bool8)
+    c = np.empty(len(b), dtype=np.bool_)
     for i in prange(len(c)):
         c[i] = np.all(a[i, :] == b[i, :])
     return c
 
 @njit(parallel=True)
 def bits_equal_index(a, b, index):
-    c = np.empty(len(b), dtype=np.bool8)
+    c = np.empty(len(b), dtype=np.bool_)
     for i in prange(len(c)):
         c[i] = ~np.any(a[index[i], :] != b[i, :])
     return c
