@@ -1,6 +1,8 @@
-# Classical Simulation of Quantum Dynamics via Pauli Propagation
+# Classical Simulation Healed by Quantum Entanglement
+<!-- # Classical Simulation of Quantum Dynamics via Pauli Propagation -->
 
-[`Classical Simulation of Noiseless Quantum Dynamics without Randomness`](https://arxiv.org/abs/2601.15770).
+<!-- [`Classical Simulation of Noiseless Quantum Dynamics without Randomness`](https://arxiv.org/abs/2601.15770). -->
+[`Classical Simulation Healed by Quantum Entanglement`](https://arxiv.org/abs/2601.15770).
 Jue Xu, Chu Zhao, Xiangran Zhang, Shuchen Zhu, and Qi Zhao, 2025.
 [![arXiv](https://img.shields.io/badge/paper%20%28v1%29-arXiv%3A2601.15770-B31B1B)](https://arxiv.org/abs/2601.15770)
 
